@@ -9,6 +9,8 @@ import { tasksFilterDto } from './dto/tasks-filters.dto';
 import { TaskRepository } from './task.Repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Task } from './tasks.entity';
+import { User } from 'src/auth/user.entity';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TasksService {
@@ -17,12 +19,12 @@ export class TasksService {
     private taskRepository: TaskRepository,
   ) {}
 
-  async getTasks(filterDto: tasksFilterDto): Promise<Task[]> {
-    return this.taskRepository.getTasks(filterDto);
+  async getTasks(filterDto: tasksFilterDto, user: User): Promise<Task[]> {
+    return this.taskRepository.getTasks(filterDto, user);
   }
 
-  async getSingleTask(id: string): Promise<Task> {
-    const found = await this.taskRepository.findOne(id);
+  async getSingleTask(id: string, user: User): Promise<Task> {
+    const found = await this.taskRepository.findOne({ id, user });
     if (!found) {
       throw new NotFoundException(`task with id of ${id} not found`);
     }
@@ -30,12 +32,16 @@ export class TasksService {
     return found;
   }
 
-  async createTask(createTaskdto: createTaskDto): Promise<Task> {
-    return this.taskRepository.createTask(createTaskdto);
+  async createTask(createTaskdto: createTaskDto, user: User): Promise<Task> {
+    return this.taskRepository.createTask(createTaskdto, user);
   }
 
-  async updateTaskStatus(id: string, status: TaskStatus): Promise<Task> {
-    let taskToBeUpdated = await this.getSingleTask(id);
+  async updateTaskStatus(
+    id: string,
+    status: TaskStatus,
+    user: User,
+  ): Promise<Task> {
+    let taskToBeUpdated = await this.getSingleTask(id, user);
 
     taskToBeUpdated.status = status;
 
@@ -43,8 +49,8 @@ export class TasksService {
     return taskToBeUpdated;
   }
 
-  async deleteTask(id: string): Promise<void> {
-    let deleted = await this.taskRepository.delete(id);
+  async deleteTask(id: string, user: User): Promise<void> {
+    let deleted = await this.taskRepository.delete({ id, user });
     if (deleted.affected === 0) {
       throw new NotFoundException(`Task with ${id} not found`);
     }
